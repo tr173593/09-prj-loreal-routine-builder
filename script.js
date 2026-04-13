@@ -376,16 +376,15 @@ async function callOpenAi(messages) {
     );
   }
 
-  const response = await fetch("https://api.openai.com/v1/responses", {
+  const response = await fetch("https://api.openai.com/v1/chat/completions", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${openAiApiKey}`,
     },
     body: JSON.stringify({
-      model: "gpt-4o-search-preview",
-      input: messages,
-      tools: [{ type: "web_search_preview" }],
+      model: "gpt-4o",
+      messages: messages,
       temperature: 0.7,
     }),
   });
@@ -397,7 +396,7 @@ async function callOpenAi(messages) {
     throw new Error(apiError);
   }
 
-  const assistantText = data.output_text;
+  const assistantText = data.choices?.[0]?.message?.content;
 
   if (!assistantText) {
     throw new Error("No response text was returned by the API.");
@@ -473,14 +472,6 @@ async function generateRoutineFromSelectedProducts() {
       "Your Personalized Routine",
       routineResponse.sources,
     );
-
-    if (routineResponse.sources.length === 0) {
-      appendChatMessage(
-        "assistant",
-        "This reply was generated without live web citations. To show current, real-world links, the upstream worker needs to return sources from a web search-enabled model.",
-        "Sources",
-      );
-    }
   } catch (error) {
     chatWindow.innerHTML = "";
     appendChatMessage("assistant", error.message, "Routine Builder");
@@ -519,14 +510,6 @@ async function handleFollowUpQuestion(question) {
       "Beauty Advisor",
       reply.sources,
     );
-
-    if (reply.sources.length === 0) {
-      appendChatMessage(
-        "assistant",
-        "No live citations were returned for this answer. If you want visible links in every response, the worker should call a search-enabled OpenAI model and forward its citations.",
-        "Sources",
-      );
-    }
   } catch (error) {
     loadingElement.remove();
     appendChatMessage("assistant", error.message, "Beauty Advisor");

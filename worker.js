@@ -33,16 +33,15 @@ async function handleRequest(request) {
       );
     }
 
-    const response = await fetch("https://api.openai.com/v1/responses", {
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${OPENAI_API_KEY}`,
       },
       body: JSON.stringify({
-        model: "gpt-4o-search-preview",
-        input: messages,
-        tools: [{ type: "web_search_preview" }],
+        model: "gpt-4o",
+        messages: messages,
         temperature: 0.7,
       }),
     });
@@ -56,7 +55,7 @@ async function handleRequest(request) {
       );
     }
 
-    const text = data.output_text || "";
+    const text = data.choices?.[0]?.message?.content || "";
     const sources = extractCitations(data);
 
     return jsonResponse({ text, sources });
