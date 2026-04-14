@@ -3,8 +3,23 @@
 // - text: the assistant's reply
 // - sources: a list of visible citation links
 
-const OPENAI_API_KEY =
-  typeof OPENAI_API_KEY_SECRET !== "undefined" ? OPENAI_API_KEY_SECRET : "";
+function getOpenAiApiKey() {
+  if (
+    typeof globalThis.OPENAI_API_KEY_SECRET !== "undefined" &&
+    globalThis.OPENAI_API_KEY_SECRET
+  ) {
+    return globalThis.OPENAI_API_KEY_SECRET;
+  }
+
+  if (
+    typeof globalThis.OPENAI_API_KEY !== "undefined" &&
+    globalThis.OPENAI_API_KEY
+  ) {
+    return globalThis.OPENAI_API_KEY;
+  }
+
+  return "";
+}
 
 addEventListener("fetch", (event) => {
   event.respondWith(handleRequest(event.request));
@@ -22,6 +37,18 @@ async function handleRequest(request) {
     return jsonResponse({ error: "Use POST for OpenAI requests." }, 405);
   }
 
+  const openAiApiKey = getOpenAiApiKey();
+
+  if (!openAiApiKey) {
+    return jsonResponse(
+      {
+        error:
+          "Missing OpenAI API key in the worker environment. Set OPENAI_API_KEY_SECRET or OPENAI_API_KEY in Cloudflare.",
+      },
+      500,
+    );
+  }
+
   try {
     const body = await request.json();
     const messages = Array.isArray(body.messages) ? body.messages : [];
@@ -37,7 +64,7 @@ async function handleRequest(request) {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${OPENAI_API_KEY}`,
+        Authorization: `Bearer ${openAiApiKey}`,
       },
       body: JSON.stringify({
         model: "gpt-4o",
